@@ -4,7 +4,7 @@ InvestAssist is an intelligent financial analysis platform designed to provide c
 
 ## Demo
 
-Watch demo here: <iframe width="560" height="315" src="https://www.youtube.com/watch?v=JgwyX9bwoAY" frameborder="0" allowfullscreen></iframe>
+Watch the demo here: [Demo](https://youtu.be/JgwyX9bwoAY)
 
 ## Agentic Workflow
 
