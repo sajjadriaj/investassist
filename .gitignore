@@ -1,0 +1,28 @@
+
+# Python
+__pycache__/
+*.pyc
+*.log
+*.env
+virtualenv/
+virtualenvs/
+virtualenv_tmp/
+venv/
+.venv/
+
+# Database
+investassist.db
+*.sqlite3
+
+# OS generated files
+.DS_Store
+.Trashes
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# IDEs
+.idea/
+.vscode/
+
