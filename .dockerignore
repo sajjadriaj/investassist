@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.DS_Store
+investassist.db
+keys.txt

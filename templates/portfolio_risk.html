@@ -1,0 +1,722 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Section -->
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-500 p-2 rounded-lg">
+                    <i class="fas fa-chart-pie text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Portfolio Risk Analysis</h3>
+                    <p class="text-sm text-gray-600">{{ data.summary or "Comprehensive risk assessment and optimization insights" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Risk Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Value-at-Risk (VaR)</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">
+                    {% if data.portfolio_var %}
+                        {{ (data.portfolio_var * 100) | round(2) }}%
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </p>
+                <p class="text-xs text-gray-500">95% confidence, daily</p>
+                <div class="mt-2">
+                    {% if data.portfolio_var %}
+                        {% if data.portfolio_var < -0.03 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <i class="fas fa-arrow-down mr-1"></i> High Risk
+                        </span>
+                        {% elif data.portfolio_var < -0.015 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-minus mr-1"></i> Medium Risk
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-arrow-up mr-1"></i> Low Risk
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-chart-line text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Sharpe Ratio</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">
+                    {% if data.sharpe_ratio %}
+                        {{ data.sharpe_ratio | round(2) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </p>
+                <p class="text-xs text-gray-500">Risk-adjusted return</p>
+                <div class="mt-2">
+                    {% if data.sharpe_ratio %}
+                        {% if data.sharpe_ratio > 1.5 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-star mr-1"></i> Excellent
+                        </span>
+                        {% elif data.sharpe_ratio > 1.0 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <i class="fas fa-thumbs-up mr-1"></i> Good
+                        </span>
+                        {% elif data.sharpe_ratio > 0.5 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-balance-scale mr-1"></i> Fair
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <i class="fas fa-thumbs-down mr-1"></i> Poor
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-chart-area text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Max Drawdown</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">
+                    {% if data.max_drawdown %}
+                        {{ (data.max_drawdown * 100) | round(2) }}%
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </p>
+                <p class="text-xs text-gray-500">Peak-to-trough decline</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-random text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Diversification</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">
+                    {% if data.diversification_ratio %}
+                        {{ data.diversification_ratio | round(2) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </p>
+                <p class="text-xs text-gray-500">Diversification ratio</p>
+                <div class="mt-2">
+                    {% if data.diversification_ratio %}
+                        {% if data.diversification_ratio > 1.2 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check mr-1"></i> Well Diversified
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-exclamation mr-1"></i> Concentrated
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Performance Chart -->
+    {% if data.portfolio_performance and data.portfolio_performance.cumulative_returns %}
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-500 p-2 rounded-lg">
+                        <i class="fas fa-chart-line text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Portfolio Performance</h3>
+                        <p class="text-sm text-gray-600">Cumulative returns and drawdown analysis</p>
+                    </div>
+                </div>
+                <button class="text-gray-500 hover:text-indigo-600" onclick="openChartModal(window.performanceChartData, 'line')">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            <div style="height: 400px;">
+                <canvas id="performance-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Risk vs Return Chart -->
+        {% if data.chart_data and data.chart_data.risk_return_scatter %}
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-purple-500 p-2 rounded-lg">
+                            <i class="fas fa-chart-scatter text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Risk vs Return</h3>
+                            <p class="text-sm text-gray-600">Asset positioning analysis</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-purple-600" onclick="openChartModal(window.riskReturnChartData, 'scatter')">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div style="height: 300px;">
+                    <canvas id="risk-return-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Correlation Matrix -->
+        {% if data.chart_data and data.chart_data.correlation_matrix %}
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-green-500 p-2 rounded-lg">
+                            <i class="fas fa-th text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Correlation Matrix</h3>
+                            <p class="text-sm text-gray-600">Asset correlation heatmap</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-green-600" onclick="openChartModal(window.correlationChartData, 'scatter')">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div style="height: 300px;">
+                    <canvas id="correlation-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Asset Details Table -->
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gray-500 p-2 rounded-lg">
+                    <i class="fas fa-table text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Asset Risk Details</h3>
+                    <p class="text-sm text-gray-600">Individual asset risk metrics and contributions</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            {% if data.asset_details %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="p-3 font-semibold text-gray-700">Ticker</th>
+                            <th class="p-3 font-semibold text-gray-700">Weight</th>
+                            <th class="p-3 font-semibold text-gray-700">VaR</th>
+                            <th class="p-3 font-semibold text-gray-700">CVaR</th>
+                            <th class="p-3 font-semibold text-gray-700">Volatility</th>
+                            <th class="p-3 font-semibold text-gray-700">Beta</th>
+                            <th class="p-3 font-semibold text-gray-700">Correlation</th>
+                            <th class="p-3 font-semibold text-gray-700">VaR Contribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in data.asset_details %}
+                        <tr class="border-b hover:bg-gray-50 transition-colors duration-150">
+                            <td class="p-3 font-bold text-blue-600">{{ asset.ticker }}</td>
+                            <td class="p-3">
+                                {% if asset.weight %}
+                                    {{ (asset.weight * 100) | round(1) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="p-3 {% if asset.var and asset.var < -0.02 %}text-red-600{% else %}text-gray-900{% endif %}">
+                                {% if asset.var %}
+                                    {{ (asset.var * 100) | round(2) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="p-3 {% if asset.cvar and asset.cvar < -0.03 %}text-red-600{% else %}text-gray-900{% endif %}">
+                                {% if asset.cvar %}
+                                    {{ (asset.cvar * 100) | round(2) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="p-3">
+                                {% if asset.volatility %}
+                                    {{ (asset.volatility * 100) | round(1) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="p-3 {% if asset.beta and asset.beta > 1.2 %}text-red-600{% elif asset.beta and asset.beta < 0.8 %}text-green-600{% else %}text-gray-900{% endif %}">
+                                {% if asset.beta %}
+                                    {{ asset.beta | round(2) }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="p-3">
+                                {% if asset.correlation %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                        {% if asset.correlation > 0.7 %}bg-red-100 text-red-800
+                                        {% elif asset.correlation > 0.3 %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-green-100 text-green-800{% endif %}">
+                                        {{ (asset.correlation * 100) | round(0) }}%
+                                    </span>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="p-3">
+                                {% if asset.contribution_to_var %}
+                                    {{ (asset.contribution_to_var * 100) | round(2) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-table text-gray-400 text-3xl mb-3"></i>
+                <p class="text-gray-500">No asset details available</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Risk Metrics Summary -->
+    {% if data.risk_metrics %}
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+                <div class="bg-yellow-500 p-2 rounded-lg">
+                    <i class="fas fa-exclamation-circle text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Advanced Risk Metrics</h3>
+                    <p class="text-sm text-gray-600">Additional risk assessment indicators</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <h5 class="font-semibold text-gray-700 text-sm">Tail Risk (1%)</h5>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if data.risk_metrics.tail_risk %}
+                            {{ (data.risk_metrics.tail_risk * 100) | round(2) }}%
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Extreme downside risk</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <h5 class="font-semibold text-gray-700 text-sm">Concentration Risk</h5>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if data.risk_metrics.concentration_risk %}
+                            {{ data.risk_metrics.concentration_risk | round(3) }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Herfindahl index</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <h5 class="font-semibold text-gray-700 text-sm">Avg Correlation</h5>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if data.risk_metrics.correlation_risk %}
+                            {{ (data.risk_metrics.correlation_risk * 100) | round(1) }}%
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Portfolio correlation</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <h5 class="font-semibold text-gray-700 text-sm">Vol Clustering</h5>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if data.risk_metrics.volatility_clustering %}
+                            {{ (data.risk_metrics.volatility_clustering * 100) | round(1) }}%
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Volatility persistence</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const portfolioData = {{ data | tojson }};
+    
+    console.log("Portfolio Risk Data:", portfolioData);
+
+    // Performance Chart
+    if (portfolioData.portfolio_performance && portfolioData.portfolio_performance.cumulative_returns) {
+        const perfData = portfolioData.portfolio_performance;
+        
+        window.performanceChartData = {
+            labels: perfData.dates || [],
+            datasets: [
+                {
+                    label: 'Cumulative Returns',
+                    data: perfData.cumulative_returns || [],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Drawdown',
+                    data: perfData.drawdowns ? perfData.drawdowns.map(d => d * 100) : [],
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 1,
+                    fill: true,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+
+        const perfCtx = document.getElementById('performance-chart');
+        if (perfCtx) {
+            new Chart(perfCtx.getContext('2d'), {
+                type: 'line',
+                data: window.performanceChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Cumulative Return'
+                            },
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Drawdown (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Risk vs Return Scatter Chart
+    if (portfolioData.chart_data && portfolioData.chart_data.risk_return_scatter) {
+        const riskReturnData = portfolioData.chart_data.risk_return_scatter;
+        
+        window.riskReturnChartData = {
+            datasets: [{
+                label: 'Assets',
+                data: riskReturnData.map(asset => ({
+                    x: asset.x * 100, // Convert to percentage
+                    y: asset.y * 100, // Convert to percentage
+                    ticker: asset.ticker,
+                    weight: asset.weight
+                })),
+                backgroundColor: function(ctx) {
+                    const colors = ['rgba(59, 130, 246, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(239, 68, 68, 0.7)', 'rgba(168, 85, 247, 0.7)', 'rgba(251, 191, 36, 0.7)'];
+                    return colors[ctx.dataIndex % colors.length];
+                },
+                borderColor: function(ctx) {
+                    const colors = ['rgb(59, 130, 246)', 'rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(168, 85, 247)', 'rgb(251, 191, 36)'];
+                    return colors[ctx.dataIndex % colors.length];
+                },
+                pointRadius: 8,
+                pointHoverRadius: 10
+            }]
+        };
+
+        const riskReturnCtx = document.getElementById('risk-return-chart');
+        if (riskReturnCtx) {
+            new Chart(riskReturnCtx.getContext('2d'), {
+                type: 'scatter',
+                data: window.riskReturnChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Volatility (%)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Expected Return (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].raw.ticker;
+                                },
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return [
+                                        `Return: ${point.y.toFixed(2)}%`,
+                                        `Risk: ${point.x.toFixed(2)}%`,
+                                        `Weight: ${(point.weight * 100).toFixed(1)}%`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Correlation Matrix Heatmap
+    if (portfolioData.chart_data && portfolioData.chart_data.correlation_matrix) {
+        const corrData = portfolioData.chart_data.correlation_matrix;
+        
+        window.correlationChartData = {
+            datasets: [{
+                label: 'Correlation',
+                data: corrData.data.map(point => ({
+                    x: point.x,
+                    y: point.y,
+                    v: point.v,
+                    ticker1: point.ticker1,
+                    ticker2: point.ticker2
+                })),
+                backgroundColor: function(ctx) {
+                    const value = ctx.raw.v;
+                    const intensity = Math.abs(value);
+                    const alpha = Math.max(0.3, intensity);
+                    return value >= 0 ? `rgba(34, 197, 94, ${alpha})` : `rgba(239, 68, 68, ${alpha})`;
+                },
+                borderColor: 'rgba(0, 0, 0, 0.1)',
+                borderWidth: 1,
+                pointRadius: function(ctx) {
+                    const size = ctx.chart.width / corrData.labels.length;
+                    return Math.max(5, size * 0.4);
+                }
+            }]
+        };
+
+        const correlationCtx = document.getElementById('correlation-chart');
+        if (correlationCtx) {
+            new Chart(correlationCtx.getContext('2d'), {
+                type: 'scatter',
+                data: window.correlationChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            min: -0.5,
+                            max: corrData.labels.length - 0.5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return corrData.labels[Math.round(value)] || '';
+                                }
+                            },
+                            title: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            min: -0.5,
+                            max: corrData.labels.length - 0.5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return corrData.labels[Math.round(value)] || '';
+                                }
+                            },
+                            title: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const point = context[0].raw;
+                                    return `${point.ticker1} vs ${point.ticker2}`;
+                                },
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return `Correlation: ${point.v.toFixed(3)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+
+// Chart Modal Functionality
+function openChartModal(chartData, chartType) {
+    let modal = document.getElementById('chart-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'chart-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+        modal.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-chart-title" class="text-xl font-bold text-gray-900">Chart Analysis</h3>
+                    <button onclick="closeChartModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div style="height: 600px;">
+                    <canvas id="modal-chart"></canvas>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    modal.classList.remove('hidden');
+
+    if (window.modalChart) {
+        window.modalChart.destroy();
+    }
+
+    const modalCtx = document.getElementById('modal-chart').getContext('2d');
+    window.modalChart = new Chart(modalCtx, {
+        type: chartType,
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+function closeChartModal() {
+    const modal = document.getElementById('chart-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    if (window.modalChart) {
+        window.modalChart.destroy();
+        window.modalChart = null;
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('chart-modal');
+    if (modal && event.target === modal) {
+        closeChartModal();
+    }
+});
+</script>
+{% endblock %}

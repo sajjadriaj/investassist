@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestAssist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.2/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab-btn:hover {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <div class="flex h-screen">
+
+        <!-- Sidebar -->
+        <div class="w-1/5 bg-white p-4 border-r border-gray-200">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Tickers</h2>
+                <button id="add-ticker-btn" class="text-gray-500 hover:text-blue-600">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <ul id="ticker-list">
+                {% for ticker in tickers %}
+                <li class="cursor-pointer p-2 rounded-md hover:bg-gray-100 {% if ticker == selected_ticker %}bg-blue-600 text-white{% endif %}" data-ticker="{{ ticker }}">
+                    {{ ticker }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="w-4/5 p-6 overflow-y-auto">
+            <div class="flex flex-col h-full">
+
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-200 mb-4">
+                    <a href="{{ url_for('market_sentiment') }}" class="tab-btn {% if request.endpoint == 'market_sentiment' %}active{% endif %}">Market Sentiment</a>
+                    <a href="{{ url_for('options_analysis') }}" class="tab-btn {% if request.endpoint == 'options_analysis' %}active{% endif %}">Options Analysis</a>
+                    <a href="{{ url_for('portfolio_risk') }}" class="tab-btn {% if request.endpoint == 'portfolio_risk' %}active{% endif %}">Portfolio Risk</a>
+                    <a href="{{ url_for('backtesting') }}" class="tab-btn {% if request.endpoint == 'backtesting' %}active{% endif %}">Backtesting</a>
+                    <a href="{{ url_for('news') }}" class="tab-btn {% if request.endpoint == 'news' %}active{% endif %}">News</a>
+                    <a href="{{ url_for('chat') }}" class="tab-btn {% if request.endpoint == 'chat' %}active{% endif %}">Chat</a>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="tab-content" class="flex-grow">
+                    {% block content %}{% endblock %}
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Add Ticker Modal -->
+    <div id="ticker-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-1/3">
+            <h3 class="text-xl font-bold mb-4">Add New Ticker</h3>
+            <input type="text" id="ticker-input" class="bg-gray-100 p-2 rounded w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+            <div class="flex justify-end mt-4">
+                <button id="cancel-ticker-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded mr-2">Cancel</button>
+                <button id="save-ticker-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Modal -->
+    <div id="chart-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-4 rounded-lg shadow-xl w-3/4 h-3/4 relative">
+            <button id="close-chart-modal-btn" class="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-2xl">&times;</button>
+            <canvas id="modal-chart-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectedTicker = '{{ selected_ticker }}';
+
+            // --- Ticker Management ---
+            const tickerList = document.getElementById('ticker-list');
+            const addTickerBtn = document.getElementById('add-ticker-btn');
+            const tickerModal = document.getElementById('ticker-modal');
+            const cancelTickerBtn = document.getElementById('cancel-ticker-btn');
+            const saveTickerBtn = document.getElementById('save-ticker-btn');
+            const tickerInput = document.getElementById('ticker-input');
+
+            if (tickerList) {
+                tickerList.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'LI') {
+                        const ticker = e.target.dataset.ticker;
+                        fetch(`/select_ticker/${ticker}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    window.location.reload();
+                                }
+                            });
+                    }
+                });
+            }
+
+            if (addTickerBtn) {
+                addTickerBtn.addEventListener('click', () => {
+                    tickerModal.classList.remove('hidden');
+                });
+            }
+
+            if (cancelTickerBtn) {
+                cancelTickerBtn.addEventListener('click', () => {
+                    tickerModal.classList.add('hidden');
+                });
+            }
+
+            if (saveTickerBtn) {
+                saveTickerBtn.addEventListener('click', () => {
+                    const newTicker = tickerInput.value.trim();
+                    if (newTicker) {
+                        fetch('/add_ticker', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ ticker: newTicker }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.reload();
+                            } else {
+                                alert(data.message);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // --- Chart Modal ---
+            const chartModal = document.getElementById('chart-modal');
+            const closeChartModalBtn = document.getElementById('close-chart-modal-btn');
+            let modalChart = null;
+
+            if (closeChartModalBtn) {
+                closeChartModalBtn.addEventListener('click', () => {
+                    chartModal.classList.add('hidden');
+                    if (modalChart) {
+                        modalChart.destroy();
+                    }
+                });
+            }
+
+            window.openChartModal = function(chartData, chartType = 'line') {
+                chartModal.classList.remove('hidden');
+                const ctx = document.getElementById('modal-chart-canvas').getContext('2d');
+                if (modalChart) {
+                    modalChart.destroy();
+                }
+                modalChart = new Chart(ctx, {
+                    type: chartType,
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            zoom: {
+                                zoom: {
+                                    wheel: { enabled: true },
+                                    pinch: { enabled: true },
+                                    mode: 'xy',
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

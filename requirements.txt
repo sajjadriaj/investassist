@@ -1,0 +1,11 @@
+Flask
+yfinance
+pandas
+numpy<2.0
+py_vollib
+pandas_ta
+pydantic
+requests
+google-generativeai
+crewai
+crewai-tools

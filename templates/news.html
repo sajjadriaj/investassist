@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Section -->
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-500 p-2 rounded-lg">
+                        <i class="fas fa-newspaper text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Market News</h3>
+                        <p class="text-sm text-gray-600">Latest financial news for <span class="font-semibold text-blue-600">{{ selected_ticker }}</span></p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Refresh Button -->
+                    <button id="refresh-news" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Refresh</span>
+                    </button>
+                    <!-- Filter Options -->
+                    <select id="news-filter" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">All Sources</option>
+                        <option value="financial">Financial News</option>
+                        <option value="general">General News</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- News Filter Tags -->
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+        <div class="flex items-center space-x-2 mb-3">
+            <i class="fas fa-filter text-gray-500"></i>
+            <span class="text-sm font-medium text-gray-700">Quick Filters:</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button class="news-tag active" data-category="all">
+                <i class="fas fa-globe mr-1"></i> All News
+            </button>
+            <button class="news-tag" data-category="earnings">
+                <i class="fas fa-chart-line mr-1"></i> Earnings
+            </button>
+            <button class="news-tag" data-category="analyst">
+                <i class="fas fa-user-tie mr-1"></i> Analyst Reports
+            </button>
+            <button class="news-tag" data-category="merger">
+                <i class="fas fa-handshake mr-1"></i> M&A
+            </button>
+            <button class="news-tag" data-category="regulatory">
+                <i class="fas fa-gavel mr-1"></i> Regulatory
+            </button>
+        </div>
+    </div>
+
+    <!-- News Content -->
+    <div id="news-content" class="space-y-4">
+        <!-- Loading spinner will be shown here initially -->
+        <div class="flex justify-center items-center py-12">
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                <p class="text-gray-600">Loading latest news...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load More Button -->
+    <div id="load-more-container" class="text-center hidden">
+        <button id="load-more-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg transition-colors duration-200 border border-gray-300">
+            <i class="fas fa-plus mr-2"></i>
+            Load More Articles
+        </button>
+    </div>
+</div>
+
+<!-- News Article Modal -->
+<div id="news-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900"></h3>
+            <button onclick="closeNewsModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div id="modal-content">
+            <!-- Article content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<style>
+.news-tag {
+    background: #f3f4f6;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.news-tag:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.news-tag.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.news-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    will-change: transform;
+}
+
+.news-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.news-card img,
+.news-card .w-full.h-24,
+.news-card .lg\\:h-full {
+    min-height: 6rem;
+    background: #f3f4f6;
+}
+
+.sentiment-positive {
+    border-left: 4px solid #10b981;
+}
+
+.sentiment-negative {
+    border-left: 4px solid #ef4444;
+}
+
+.sentiment-neutral {
+    border-left: 4px solid #6b7280;
+}
+
+.source-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectedTicker = '{{ selected_ticker }}';
+    let currentArticles = [];
+    let filteredArticles = [];
+    let currentFilter = 'all';
+    let articlesPerPage = 6;
+    let currentPage = 1;
+
+    // Initialize news loading
+    fetchNews(selectedTicker);
+
+    // Event listeners
+    document.getElementById('refresh-news').addEventListener('click', () => {
+        fetchNews(selectedTicker);
+    });
+
+    document.getElementById('news-filter').addEventListener('change', (e) => {
+        filterArticles(e.target.value);
+    });
+
+    document.getElementById('load-more-btn').addEventListener('click', () => {
+        loadMoreArticles();
+    });
+
+    // News tag filters
+    document.querySelectorAll('.news-tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+            document.querySelectorAll('.news-tag').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.getAttribute('data-category');
+            filterAndDisplayArticles();
+        });
+    });
+
+    function fetchNews(ticker) {
+        const newsContent = document.getElementById('news-content');
+        showLoadingState();
+
+        // Simulate API call with mock data for demonstration
+        setTimeout(() => {
+            const mockNews = generateMockNews(ticker);
+            currentArticles = mockNews;
+            filteredArticles = mockNews;
+            currentPage = 1;
+            displayArticles();
+        }, 1500);
+
+        // Uncomment this for real API integration
+        /*
+        fetch(`/api/news/${ticker}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showErrorState(data.error);
+                    return;
+                }
+                currentArticles = data;
+                filteredArticles = data;
+                currentPage = 1;
+                displayArticles();
+            })
+            .catch(error => {
+                showErrorState(`Failed to load news: ${error.message}`);
+            });
+        */
+    }
+
+    function generateMockNews(ticker) {
+        // Generate dates within the last 2 weeks
+        const now = Date.now();
+        const twoWeeksAgo = now - (14 * 24 * 60 * 60 * 1000);
+        
+        const mockArticles = [
+            {
+                title: `${ticker} Trading Volume Surges 40% as Institutional Investors Show Interest`,
+                description: `${ticker} shares experienced unprecedented trading volume this week as major institutional investors increased their positions, signaling strong confidence in the company's growth prospects for 2025.`,
+                url: `https://finance.yahoo.com/news/${ticker.toLowerCase()}-trading-volume-surges`,
+                source: { name: 'Yahoo Finance' },
+                publishedAt: new Date(now - Math.random() * (3 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'all',
+                sentiment: 'positive',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `${ticker} Announces Partnership with Leading Tech Giants for AI Integration`,
+                description: `${ticker} revealed strategic partnerships with major technology companies to integrate artificial intelligence capabilities across its platform, expected to drive significant revenue growth in upcoming quarters.`,
+                url: `https://www.marketwatch.com/story/${ticker.toLowerCase()}-ai-partnership-2025`,
+                source: { name: 'MarketWatch' },
+                publishedAt: new Date(now - Math.random() * (5 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'merger',
+                sentiment: 'positive',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `Analysts Raise ${ticker} Price Target Following Strong Market Performance`,
+                description: `Several Wall Street analysts have upgraded their price targets for ${ticker} following the company's resilient performance amid market volatility and strong fundamentals demonstrated in recent weeks.`,
+                url: `https://www.cnbc.com/2025/07/02/${ticker.toLowerCase()}-analyst-upgrades.html`,
+                source: { name: 'CNBC' },
+                publishedAt: new Date(now - Math.random() * (7 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'analyst',
+                sentiment: 'positive',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `${ticker} Implements New ESG Initiatives to Meet 2025 Sustainability Goals`,
+                description: `${ticker} launched comprehensive environmental, social, and governance initiatives this month, positioning the company as a leader in sustainable business practices within its sector.`,
+                url: `https://www.reuters.com/business/${ticker.toLowerCase()}-esg-initiatives-2025-06-28/`,
+                source: { name: 'Reuters' },
+                publishedAt: new Date(now - Math.random() * (9 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'regulatory',
+                sentiment: 'neutral',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `${ticker} Reports Record User Engagement in Latest Monthly Metrics`,
+                description: `${ticker} disclosed impressive user engagement statistics for June 2025, with monthly active users reaching new highs and customer retention rates exceeding industry benchmarks.`,
+                url: `https://www.bloomberg.com/news/articles/2025-06-30/${ticker.toLowerCase()}-user-engagement-record`,
+                source: { name: 'Bloomberg' },
+                publishedAt: new Date(now - Math.random() * (11 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'earnings',
+                sentiment: 'positive',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `Market Volatility Creates Opportunity for ${ticker} Long-term Investors`,
+                description: `Financial advisors suggest that recent market fluctuations present strategic entry points for ${ticker} investors, citing the company's strong balance sheet and growth trajectory.`,
+                url: `https://www.ft.com/content/${ticker.toLowerCase()}-investment-opportunity-2025`,
+                source: { name: 'Financial Times' },
+                publishedAt: new Date(now - Math.random() * (13 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'all',
+                sentiment: 'neutral',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `${ticker} Expands International Operations with New Regional Headquarters`,
+                description: `${ticker} announced the establishment of new regional headquarters in key international markets, part of an aggressive expansion strategy to capture global market share in 2025.`,
+                url: `https://www.wsj.com/articles/${ticker.toLowerCase()}-international-expansion-2025-06-25`,
+                source: { name: 'Wall Street Journal' },
+                publishedAt: new Date(twoWeeksAgo + Math.random() * (2 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'all',
+                sentiment: 'positive',
+                isBreaking: false,
+                urlToImage: null
+            },
+            {
+                title: `Industry Experts Predict Strong Q3 Performance for ${ticker}`,
+                description: `Leading industry analysts forecast robust third-quarter results for ${ticker}, citing favorable market conditions, operational improvements, and strategic initiatives implemented in recent months.`,
+                url: `https://seekingalpha.com/article/${ticker.toLowerCase()}-q3-predictions-2025`,
+                source: { name: 'Seeking Alpha' },
+                publishedAt: new Date(twoWeeksAgo + Math.random() * (4 * 24 * 60 * 60 * 1000)).toISOString(),
+                category: 'analyst',
+                sentiment: 'positive',
+                isBreaking: false,
+                urlToImage: null
+            }
+        ];
+
+        // Sort by date (newest first)
+        return mockArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    }
+
+    function showLoadingState() {
+        const newsContent = document.getElementById('news-content');
+        newsContent.innerHTML = `
+            <div class="flex justify-center items-center py-12">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                    <p class="text-gray-600">Loading latest news for ${selectedTicker}...</p>
+                    <div class="mt-4">
+                        <div class="w-64 bg-gray-200 rounded-full h-2 mx-auto">
+                            <div class="bg-blue-600 h-2 rounded-full animate-pulse" style="width: 45%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function showErrorState(message) {
+        const newsContent = document.getElementById('news-content');
+        newsContent.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-3"></i>
+                <h3 class="text-lg font-semibold text-red-800 mb-2">Unable to Load News</h3>
+                <p class="text-red-600">${message}</p>
+                <button onclick="fetchNews('${selectedTicker}')" class="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-redo mr-2"></i>Try Again
+                </button>
+            </div>
+        `;
+    }
+
+    function filterAndDisplayArticles() {
+        if (currentFilter === 'all') {
+            filteredArticles = currentArticles;
+        } else {
+            filteredArticles = currentArticles.filter(article => 
+                article.category === currentFilter || 
+                article.title.toLowerCase().includes(currentFilter.toLowerCase())
+            );
+        }
+        currentPage = 1;
+        displayArticles();
+    }
+
+    function displayArticles() {
+        const newsContent = document.getElementById('news-content');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        
+        if (filteredArticles.length === 0) {
+            newsContent.innerHTML = `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                    <i class="fas fa-newspaper text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">No News Found</h3>
+                    <p class="text-gray-500">No articles found for the selected filter. Try adjusting your search criteria.</p>
+                </div>
+            `;
+            loadMoreContainer.classList.add('hidden');
+            return;
+        }
+
+        const articlesToShow = filteredArticles.slice(0, currentPage * articlesPerPage);
+        let newsHtml = '';
+
+        articlesToShow.forEach((article, index) => {
+            const timeAgo = getTimeAgo(article.publishedAt);
+            const sentimentClass = `sentiment-${article.sentiment}`;
+            
+            newsHtml += `
+                <div class="news-card bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden ${sentimentClass}" onclick="openNewsModal('${index}')">
+                    <div class="p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="source-badge">${article.source.name}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-gray-500">
+                                        <i class="fas fa-clock mr-1"></i>${timeAgo}
+                                    </span>
+                                    ${getSentimentBadge(article.sentiment)}
+                                </div>
+                            </div>
+                            
+                            <h3 class="text-xl font-bold text-gray-900 mb-3 leading-tight hover:text-blue-600 transition-colors duration-200">
+                                ${article.title}
+                            </h3>
+                            
+                            <p class="text-gray-600 mb-4 leading-relaxed">
+                                ${article.description}
+                            </p>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="fas fa-tag mr-1"></i>${article.category}
+                                    </span>
+                                </div>
+                                
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-gray-400 hover:text-blue-500 transition-colors duration-200" onclick="event.stopPropagation(); shareArticle('${index}')">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-500 transition-colors duration-200" onclick="event.stopPropagation(); bookmarkArticle('${index}')">
+                                        <i class="fas fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        newsContent.innerHTML = newsHtml;
+
+        // Show/hide load more button
+        if (articlesToShow.length < filteredArticles.length) {
+            loadMoreContainer.classList.remove('hidden');
+        } else {
+            loadMoreContainer.classList.add('hidden');
+        }
+    }
+
+    function loadMoreArticles() {
+        currentPage++;
+        displayArticles();
+    }
+
+    function getSentimentBadge(sentiment) {
+        const badges = {
+            positive: '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-arrow-up mr-1"></i>Positive</span>',
+            negative: '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-arrow-down mr-1"></i>Negative</span>',
+            neutral: '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"><i class="fas fa-minus mr-1"></i>Neutral</span>'
+        };
+        return badges[sentiment] || badges.neutral;
+    }
+
+    function getTimeAgo(dateString) {
+        const now = new Date();
+        const articleDate = new Date(dateString);
+        const diffMs = now - articleDate;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+        if (diffHours > 24) {
+            const diffDays = Math.floor(diffHours / 24);
+            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+            return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else {
+            return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+        }
+    }
+
+    function getSourceDomain(sourceName) {
+        const domains = {
+            'Financial Times': 'ft.com',
+            'Bloomberg': 'bloomberg.com',
+            'Reuters': 'reuters.com',
+            'Wall Street Journal': 'wsj.com',
+            'CNBC': 'cnbc.com',
+            'MarketWatch': 'marketwatch.com',
+            'Yahoo Finance': 'finance.yahoo.com',
+            'Seeking Alpha': 'seekingalpha.com'
+        };
+        return domains[sourceName] || 'finance.yahoo.com';
+    }
+
+    // Modal functions
+    window.openNewsModal = function(index) {
+        const article = filteredArticles[index];
+        const modal = document.getElementById('news-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+
+        modalTitle.textContent = article.title;
+        modalContent.innerHTML = `
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="source-badge">${article.source.name}</span>
+                    <span class="text-sm text-gray-500">${new Date(article.publishedAt).toLocaleDateString()}</span>
+                </div>
+                
+                <p class="text-gray-700 leading-relaxed">${article.description}</p>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-3">This is a demo article. For real ${article.source.name} news about ${selectedTicker}, click below to search their website:</p>
+                    <div class="space-y-2">
+                        <a href="https://www.google.com/search?q=${selectedTicker}+news+site:${getSourceDomain(article.source.name)}" target="_blank" rel="noopener noreferrer" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 inline-flex items-center mr-2">
+                            <i class="fas fa-search mr-2"></i>Search ${article.source.name}
+                        </a>
+                        <a href="https://finance.yahoo.com/quote/${selectedTicker}/news" target="_blank" rel="noopener noreferrer" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 inline-flex items-center">
+                            <i class="fas fa-external-link-alt mr-2"></i>View All ${selectedTicker} News
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closeNewsModal = function() {
+        document.getElementById('news-modal').classList.add('hidden');
+    };
+
+    window.shareArticle = function(index) {
+        const article = filteredArticles[index];
+        if (navigator.share) {
+            navigator.share({
+                title: article.title,
+                text: article.description,
+                url: article.url
+            });
+        } else {
+            // Fallback for browsers that don't support Web Share API
+            navigator.clipboard.writeText(article.url).then(() => {
+                alert('Article URL copied to clipboard!');
+            });
+        }
+    };
+
+    window.bookmarkArticle = function(index) {
+        const article = filteredArticles[index];
+        // Here you would typically save to localStorage or send to server
+        alert(`Article "${article.title}" bookmarked!`);
+    };
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('news-modal');
+        if (modal && event.target === modal) {
+            closeNewsModal();
+        }
+    });
+});
+</script>
+{% endblock %}

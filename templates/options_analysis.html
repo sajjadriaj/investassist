@@ -1,0 +1,1113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-balance-scale text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Put/Call Ratio</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">{{ data.put_call_ratio | round(2) if data.put_call_ratio else 'N/A' }}</p>
+                <p class="text-xs text-gray-500">Market sentiment indicator</p>
+                {% if data.put_call_ratio %}
+                <div class="mt-2">
+                    {% if data.put_call_ratio > 0.7 %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-arrow-down mr-1"></i> Bearish
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-arrow-up mr-1"></i> Bullish
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-target text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Max Pain</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">${{ data.max_pain | round(2) if data.max_pain else 'N/A' }}</p>
+                <p class="text-xs text-gray-500">Optimal expiry price</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-phone text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Total Calls</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">{{ data.calls | length }}</p>
+                <p class="text-xs text-gray-500">Available contracts</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-hand-paper text-white text-lg"></i>
+                    <h4 class="font-semibold text-white text-sm">Total Puts</h4>
+                </div>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-3xl font-bold text-gray-900 mb-1">{{ data.puts | length }}</p>
+                <p class="text-xs text-gray-500">Available contracts</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Points -->
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-500 p-2 rounded-lg">
+                    <i class="fas fa-chart-bar text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Options Analysis</h3>
+                    <p class="text-sm text-gray-600">Key insights and market indicators</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            {% if data.analysis_points %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for point in data.analysis_points %}
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-gray-800">{{ point.title }}</h4>
+                        <div class="text-xs text-gray-500 cursor-help" title="{{ point.info }}">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 font-semibold">{{ point.description }}</p>
+                    <p class="text-xs text-gray-500 mt-2">{{ point.info }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-chart-line text-gray-400 text-4xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No analysis data available</p>
+                <p class="text-gray-400 text-sm">Please check if the ticker has options data available</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Advanced Analytics Section -->
+    {% if data.options_analytics and (data.options_analytics.safest_calls or data.options_analytics.safest_puts or data.options_analytics.highest_profit_calls or data.options_analytics.highest_profit_puts) %}
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200 mb-6">
+        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+                <div class="bg-purple-500 p-2 rounded-lg">
+                    <i class="fas fa-chart-line text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Advanced Options Analytics</h3>
+                    <p class="text-sm text-gray-600">Risk-analyzed recommendations and profit optimization</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Recommended Options Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Safest Options -->
+                <div class="bg-green-50 rounded-lg p-6 border border-green-200">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="bg-green-500 p-2 rounded-lg">
+                            <i class="fas fa-shield-alt text-white"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-green-900">Safest Options</h4>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Low Risk</span>
+                    </div>
+                    
+                    <!-- Safest Calls -->
+                    {% if data.options_analytics.safest_calls %}
+                    <div class="mb-4">
+                        <h5 class="font-medium text-green-800 mb-2">
+                            <i class="fas fa-phone text-sm mr-1"></i> Safest Calls
+                        </h5>
+                        <div class="space-y-2">
+                            {% for option in data.options_analytics.safest_calls[:3] %}
+                            <div class="bg-white p-3 rounded border border-green-200 flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-green-700">${{ option.strike | round(2) }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">
+                                        Risk: {{ option.risk_score | round(1) }}
+                                    </span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-medium">${{ option.lastPrice | round(2) }}</div>
+                                    <div class="text-xs text-green-600">{{ (option.prob_profit * 100) | round(1) }}% win rate</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Safest Puts -->
+                    {% if data.options_analytics.safest_puts %}
+                    <div>
+                        <h5 class="font-medium text-green-800 mb-2">
+                            <i class="fas fa-hand-paper text-sm mr-1"></i> Safest Puts
+                        </h5>
+                        <div class="space-y-2">
+                            {% for option in data.options_analytics.safest_puts[:3] %}
+                            <div class="bg-white p-3 rounded border border-green-200 flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-green-700">${{ option.strike | round(2) }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">
+                                        Risk: {{ option.risk_score | round(1) }}
+                                    </span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-medium">${{ option.lastPrice | round(2) }}</div>
+                                    <div class="text-xs text-green-600">{{ (option.prob_profit * 100) | round(1) }}% win rate</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Highest Profit Potential -->
+                <div class="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="bg-blue-500 p-2 rounded-lg">
+                            <i class="fas fa-rocket text-white"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-blue-900">Maximum Profit Potential</h4>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">High Reward</span>
+                    </div>
+                    
+                    <!-- Highest Profit Calls -->
+                    {% if data.options_analytics.highest_profit_calls %}
+                    <div class="mb-4">
+                        <h5 class="font-medium text-blue-800 mb-2">
+                            <i class="fas fa-phone text-sm mr-1"></i> Top Profit Calls
+                        </h5>
+                        <div class="space-y-2">
+                            {% for option in data.options_analytics.highest_profit_calls[:3] %}
+                            <div class="bg-white p-3 rounded border border-blue-200 flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-blue-700">${{ option.strike | round(2) }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">
+                                        Profit: ${{ option.profit_potential | round(2) }}
+                                    </span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-medium">${{ option.lastPrice | round(2) }}</div>
+                                    <div class="text-xs text-blue-600">{{ (option.prob_profit * 100) | round(1) }}% win rate</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Highest Profit Puts -->
+                    {% if data.options_analytics.highest_profit_puts %}
+                    <div>
+                        <h5 class="font-medium text-blue-800 mb-2">
+                            <i class="fas fa-hand-paper text-sm mr-1"></i> Top Profit Puts
+                        </h5>
+                        <div class="space-y-2">
+                            {% for option in data.options_analytics.highest_profit_puts[:3] %}
+                            <div class="bg-white p-3 rounded border border-blue-200 flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-blue-700">${{ option.strike | round(2) }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">
+                                        Profit: ${{ option.profit_potential | round(2) }}
+                                    </span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-medium">${{ option.lastPrice | round(2) }}</div>
+                                    <div class="text-xs text-blue-600">{{ (option.prob_profit * 100) | round(1) }}% win rate</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Risk vs Reward Charts -->
+            {% if data.options_analytics.risk_reward_data and (data.options_analytics.risk_reward_data.calls or data.options_analytics.risk_reward_data.puts) %}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Risk vs Reward Scatter Plot -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h5 class="font-semibold text-gray-800">
+                            <i class="fas fa-chart-scatter text-purple-500 mr-2"></i>Risk vs Reward Analysis
+                        </h5>
+                        <button class="text-gray-500 hover:text-purple-600" onclick="openChartModal(window.riskRewardChartData, 'scatter')">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="risk-reward-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Profit Potential Distribution -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h5 class="font-semibold text-gray-800">
+                            <i class="fas fa-chart-bar text-blue-500 mr-2"></i>Profit Potential
+                        </h5>
+                        <button class="text-gray-500 hover:text-blue-600" onclick="openChartModal(window.profitDistributionChartData, 'bar')">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="profit-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Open Interest Chart -->
+    <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-500 p-2 rounded-lg">
+                        <i class="fas fa-chart-area text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Open Interest Distribution</h3>
+                        <p class="text-sm text-gray-600">Call and Put open interest by strike price</p>
+                    </div>
+                </div>
+                <button class="text-gray-500 hover:text-blue-600" onclick="openChartModal(window.openInterestChartData, 'bar')">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            <div style="height: 400px;">
+                <canvas id="open-interest-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Tables -->
+    <div class="space-y-6">
+        <!-- Options by Expiration Date -->
+        {% if data.expiration_groups %}
+            {% for exp_group in data.expiration_groups %}
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 mb-6">
+                <!-- Expiration Header -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="bg-blue-500 p-2 rounded-lg">
+                                <i class="fas fa-calendar text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">Expiration: {{ exp_group.expiration_date }}</h3>
+                                <p class="text-sm text-gray-600">
+                                    {% if exp_group.days_to_expiry == 0 %}
+                                        Expires today
+                                    {% elif exp_group.days_to_expiry == 1 %}
+                                        Expires tomorrow ({{ exp_group.days_to_expiry }} day)
+                                    {% else %}
+                                        {{ exp_group.days_to_expiry }} days to expiry
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <button class="expiration-toggle bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2" 
+                                data-target="exp-{{ loop.index }}">
+                            <span class="toggle-text">Expand</span>
+                            <i class="fas fa-chevron-down toggle-icon transition-transform duration-200"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Collapsible Content -->
+                <div id="exp-{{ loop.index }}" class="expiration-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                        
+                        <!-- Call Options for this expiration -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center space-x-2 mb-4">
+                                <div class="bg-green-500 p-1 rounded">
+                                    <i class="fas fa-phone text-white text-sm"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold text-gray-900">Call Options ({{ exp_group.calls|length }})</h4>
+                            </div>
+                            
+                            {% if exp_group.calls %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-xs text-left">
+                                    <thead class="bg-white border-b border-gray-200">
+                                        <tr>
+                                            <th class="p-2 font-semibold text-gray-700">Strike</th>
+                                            <th class="p-2 font-semibold text-gray-700">Price</th>
+                                            <th class="p-2 font-semibold text-gray-700">Vol</th>
+                                            <th class="p-2 font-semibold text-gray-700">OI</th>
+                                            <th class="p-2 font-semibold text-gray-700">IV</th>
+                                            <th class="p-2 font-semibold text-gray-700">Θ</th>
+                                            <th class="p-2 font-semibold text-gray-700">Γ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for opt in exp_group.calls %}
+                                        <tr class="border-b hover:bg-white transition-colors duration-150">
+                                            <td class="p-2 font-bold text-green-600">${{ opt.strike | round(2) }}</td>
+                                            <td class="p-2">${{ opt.lastPrice | round(2) }}</td>
+                                            <td class="p-2">
+                                                {% if opt.volume %}
+                                                    <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {{ opt.volume | int }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-gray-400 text-xs">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="p-2">
+                                                {% if opt.openInterest %}
+                                                    <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                        {{ opt.openInterest | int }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-gray-400 text-xs">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="p-2 text-xs">{{ (opt.impliedVolatility * 100) | round(1) }}%</td>
+                                            <td class="p-2 text-xs {% if opt.theta and opt.theta < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                                {{ opt.theta | round(3) if opt.theta else '-' }}
+                                            </td>
+                                            <td class="p-2 text-xs">{{ opt.gamma | round(3) if opt.gamma else '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-gray-500 text-sm">No call options available</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Put Options for this expiration -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center space-x-2 mb-4">
+                                <div class="bg-red-500 p-1 rounded">
+                                    <i class="fas fa-hand-paper text-white text-sm"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold text-gray-900">Put Options ({{ exp_group.puts|length }})</h4>
+                            </div>
+                            
+                            {% if exp_group.puts %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-xs text-left">
+                                    <thead class="bg-white border-b border-gray-200">
+                                        <tr>
+                                            <th class="p-2 font-semibold text-gray-700">Strike</th>
+                                            <th class="p-2 font-semibold text-gray-700">Price</th>
+                                            <th class="p-2 font-semibold text-gray-700">Vol</th>
+                                            <th class="p-2 font-semibold text-gray-700">OI</th>
+                                            <th class="p-2 font-semibold text-gray-700">IV</th>
+                                            <th class="p-2 font-semibold text-gray-700">Θ</th>
+                                            <th class="p-2 font-semibold text-gray-700">Γ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for opt in exp_group.puts %}
+                                        <tr class="border-b hover:bg-white transition-colors duration-150">
+                                            <td class="p-2 font-bold text-red-600">${{ opt.strike | round(2) }}</td>
+                                            <td class="p-2">${{ opt.lastPrice | round(2) }}</td>
+                                            <td class="p-2">
+                                                {% if opt.volume %}
+                                                    <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {{ opt.volume | int }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-gray-400 text-xs">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="p-2">
+                                                {% if opt.openInterest %}
+                                                    <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                        {{ opt.openInterest | int }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-gray-400 text-xs">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="p-2 text-xs">{{ (opt.impliedVolatility * 100) | round(1) }}%</td>
+                                            <td class="p-2 text-xs {% if opt.theta and opt.theta < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                                {{ opt.theta | round(3) if opt.theta else '-' }}
+                                            </td>
+                                            <td class="p-2 text-xs">{{ opt.gamma | round(3) if opt.gamma else '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-gray-500 text-sm">No put options available</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback to legacy structure if no expiration groups -->
+            <!-- Call Options -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-green-500 p-2 rounded-lg">
+                            <i class="fas fa-phone text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Call Options</h3>
+                            <p class="text-sm text-gray-600">Bullish contracts with strike prices</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    {% if data.calls %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm text-left">
+                            <thead class="bg-gray-50 border-b-2 border-gray-200">
+                                <tr>
+                                    <th class="p-3 font-semibold text-gray-700">Strike</th>
+                                    <th class="p-3 font-semibold text-gray-700">Last Price</th>
+                                    <th class="p-3 font-semibold text-gray-700">Volume</th>
+                                    <th class="p-3 font-semibold text-gray-700">Open Interest</th>
+                                    <th class="p-3 font-semibold text-gray-700">Implied Vol.</th>
+                                    <th class="p-3 font-semibold text-gray-700">Theta</th>
+                                    <th class="p-3 font-semibold text-gray-700">Gamma</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for opt in data.calls %}
+                                <tr class="border-b hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="p-3 font-bold text-green-600">${{ opt.strike | round(2) }}</td>
+                                    <td class="p-3">${{ opt.lastPrice | round(2) }}</td>
+                                    <td class="p-3">
+                                        {% if opt.volume %}
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {{ opt.volume | int }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-gray-400">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3">
+                                        {% if opt.openInterest %}
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                {{ opt.openInterest | int }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-gray-400">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3">{{ (opt.impliedVolatility * 100) | round(2) }}%</td>
+                                    <td class="p-3 {% if opt.theta and opt.theta < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                        {{ opt.theta | round(4) if opt.theta else 'N/A' }}
+                                    </td>
+                                    <td class="p-3">{{ opt.gamma | round(4) if opt.gamma else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-phone text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No call options data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Put Options -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+                <div class="bg-gradient-to-r from-red-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-red-500 p-2 rounded-lg">
+                            <i class="fas fa-hand-paper text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Put Options</h3>
+                            <p class="text-sm text-gray-600">Bearish contracts with strike prices</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    {% if data.puts %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm text-left">
+                            <thead class="bg-gray-50 border-b-2 border-gray-200">
+                                <tr>
+                                    <th class="p-3 font-semibold text-gray-700">Strike</th>
+                                    <th class="p-3 font-semibold text-gray-700">Last Price</th>
+                                    <th class="p-3 font-semibold text-gray-700">Volume</th>
+                                    <th class="p-3 font-semibold text-gray-700">Open Interest</th>
+                                    <th class="p-3 font-semibold text-gray-700">Implied Vol.</th>
+                                    <th class="p-3 font-semibold text-gray-700">Theta</th>
+                                    <th class="p-3 font-semibold text-gray-700">Gamma</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for opt in data.puts %}
+                                <tr class="border-b hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="p-3 font-bold text-red-600">${{ opt.strike | round(2) }}</td>
+                                    <td class="p-3">${{ opt.lastPrice | round(2) }}</td>
+                                    <td class="p-3">
+                                        {% if opt.volume %}
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {{ opt.volume | int }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-gray-400">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3">
+                                        {% if opt.openInterest %}
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                {{ opt.openInterest | int }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-gray-400">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3">{{ (opt.impliedVolatility * 100) | round(2) }}%</td>
+                                    <td class="p-3 {% if opt.theta and opt.theta < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                        {{ opt.theta | round(4) if opt.theta else 'N/A' }}
+                                    </td>
+                                    <td class="p-3">{{ opt.gamma | round(4) if opt.gamma else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-hand-paper text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No put options data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle expandable expiration sections
+    const toggleButtons = document.querySelectorAll('.expiration-toggle');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const content = document.getElementById(targetId);
+            const toggleText = this.querySelector('.toggle-text');
+            const toggleIcon = this.querySelector('.toggle-icon');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                toggleText.textContent = 'Collapse';
+                toggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                toggleText.textContent = 'Expand';
+                toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    });
+
+    // Existing chart code
+    const callsData = {{ data.calls | tojson }} || [];
+    const putsData = {{ data.puts | tojson }} || [];
+    
+    // Advanced analytics data
+    const analyticsData = {{ data.options_analytics | tojson }} || {};
+
+    console.log("Options Analysis - Calls Data:", callsData.length, "contracts");
+    console.log("Options Analysis - Puts Data:", putsData.length, "contracts");
+    console.log("Analytics Data:", analyticsData);
+
+    if (callsData.length === 0 && putsData.length === 0) {
+        console.log("No options data available for ticker");
+        // Hide the chart and show a message
+        const chartContainer = document.getElementById('open-interest-chart').parentElement;
+        chartContainer.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-chart-bar text-gray-400 text-4xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No options data available</p>
+                <p class="text-gray-400 text-sm">This ticker may not have options contracts or they may be expired</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Prepare data for Open Interest Chart
+    const allStrikes = [...new Set([
+        ...callsData.map(c => c.strike),
+        ...putsData.map(p => p.strike)
+    ])].sort((a, b) => a - b);
+
+    const callsOpenInterest = allStrikes.map(strike => {
+        const call = callsData.find(c => c.strike === strike);
+        return call ? (call.openInterest || 0) : 0;
+    });
+
+    const putsOpenInterest = allStrikes.map(strike => {
+        const put = putsData.find(p => p.strike === strike);
+        return put ? (put.openInterest || 0) : 0;
+    });
+
+    // Open Interest Chart
+    window.openInterestChartData = {
+        labels: allStrikes.map(s => `$${s}`),
+        datasets: [
+            {
+                label: 'Calls Open Interest',
+                data: callsOpenInterest,
+                backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                borderColor: 'rgb(34, 197, 94)',
+                borderWidth: 1
+            },
+            {
+                label: 'Puts Open Interest', 
+                data: putsOpenInterest.map(val => -val), // Negative for visual separation
+                backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                borderColor: 'rgb(239, 68, 68)',
+                borderWidth: 1
+            }
+        ]
+    };
+
+    const oiCtx = document.getElementById('open-interest-chart').getContext('2d');
+    new Chart(oiCtx, {
+        type: 'bar',
+        data: window.openInterestChartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Strike Prices'
+                    }
+                },
+                y: {
+                    grid: { display: true, color: 'rgba(0,0,0,0.1)' },
+                    title: {
+                        display: true,
+                        text: 'Open Interest'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return Math.abs(value);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: { 
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        title: function(context) {
+                            return `Strike: ${context[0].label}`;
+                        },
+                        label: function(context) {
+                            const value = Math.abs(context.parsed.y);
+                            return `${context.dataset.label}: ${value.toLocaleString()}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Advanced Analytics Charts
+    if (analyticsData && analyticsData.risk_reward_data) {
+        const riskRewardData = analyticsData.risk_reward_data;
+        
+        // Risk vs Reward Scatter Chart
+        if (riskRewardData.calls || riskRewardData.puts) {
+            const scatterData = [];
+            
+            // Add calls data
+            if (riskRewardData.calls) {
+                riskRewardData.calls.forEach(option => {
+                    scatterData.push({
+                        x: option.risk_score,
+                        y: option.profit_potential,
+                        strike: option.strike,
+                        price: option.lastPrice,
+                        type: 'call'
+                    });
+                });
+            }
+            
+            // Add puts data
+            if (riskRewardData.puts) {
+                riskRewardData.puts.forEach(option => {
+                    scatterData.push({
+                        x: option.risk_score,
+                        y: option.profit_potential,
+                        strike: option.strike,
+                        price: option.lastPrice,
+                        type: 'put'
+                    });
+                });
+            }
+            
+            // Prepare chart data
+            window.riskRewardChartData = {
+                datasets: [
+                    {
+                        label: 'Call Options',
+                        data: scatterData.filter(d => d.type === 'call'),
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgb(34, 197, 94)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    },
+                    {
+                        label: 'Put Options',
+                        data: scatterData.filter(d => d.type === 'put'),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgb(239, 68, 68)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }
+                ]
+            };
+            
+            // Create Risk vs Reward Chart
+            const riskRewardCtx = document.getElementById('risk-reward-chart');
+            if (riskRewardCtx) {
+                new Chart(riskRewardCtx.getContext('2d'), {
+                    type: 'scatter',
+                    data: window.riskRewardChartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Risk Score (Lower = Safer)'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Profit Potential ($)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    title: function(context) {
+                                        const point = context[0].raw;
+                                        return `${point.type.toUpperCase()} Strike: $${point.strike}`;
+                                    },
+                                    label: function(context) {
+                                        const point = context.raw;
+                                        return [
+                                            `Price: $${point.price}`,
+                                            `Risk Score: ${point.x.toFixed(1)}`,
+                                            `Profit Potential: $${point.y.toFixed(2)}`
+                                        ];
+                                    }
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Profit Distribution Chart
+            const profitBuckets = {
+                'Low (0-5)': 0,
+                'Medium (5-15)': 0,
+                'High (15-50)': 0,
+                'Very High (50+)': 0
+            };
+            
+            scatterData.forEach(option => {
+                const profit = option.y;
+                if (profit <= 5) profitBuckets['Low (0-5)']++;
+                else if (profit <= 15) profitBuckets['Medium (5-15)']++;
+                else if (profit <= 50) profitBuckets['High (15-50)']++;
+                else profitBuckets['Very High (50+)']++;
+            });
+            
+            window.profitDistributionChartData = {
+                labels: Object.keys(profitBuckets),
+                datasets: [{
+                    label: 'Number of Options',
+                    data: Object.values(profitBuckets),
+                    backgroundColor: [
+                        'rgba(156, 163, 175, 0.7)',
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(34, 197, 94, 0.7)',
+                        'rgba(168, 85, 247, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(156, 163, 175)',
+                        'rgb(59, 130, 246)',
+                        'rgb(34, 197, 94)',
+                        'rgb(168, 85, 247)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+            
+            const profitDistCtx = document.getElementById('profit-distribution-chart');
+            if (profitDistCtx) {
+                new Chart(profitDistCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: window.profitDistributionChartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Profit Potential Range ($)'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Number of Options'
+                                },
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+});
+
+// Chart Modal Functionality
+function openChartModal(chartData, chartType) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('chart-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'chart-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+        modal.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-chart-title" class="text-xl font-bold text-gray-900">Chart Analysis</h3>
+                    <button onclick="closeChartModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div style="height: 600px;">
+                    <canvas id="modal-chart"></canvas>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Update modal title based on chart type
+    const titleElement = document.getElementById('modal-chart-title');
+    if (chartType === 'scatter') {
+        titleElement.textContent = 'Risk vs Reward Analysis';
+    } else if (chartType === 'bar' && chartData.labels && chartData.labels[0].includes('(')) {
+        titleElement.textContent = 'Profit Potential Distribution';
+    } else {
+        titleElement.textContent = 'Open Interest Distribution';
+    }
+
+    // Show modal
+    modal.classList.remove('hidden');
+
+    // Destroy existing chart if any
+    if (window.modalChart) {
+        window.modalChart.destroy();
+    }
+
+    // Create chart options based on type
+    let chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        }
+    };
+
+    if (chartType === 'scatter') {
+        chartOptions.scales = {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Risk Score (Lower = Safer)'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Profit Potential ($)'
+                }
+            }
+        };
+        chartOptions.plugins = {
+            tooltip: {
+                callbacks: {
+                    title: function(context) {
+                        const point = context[0].raw;
+                        return `${point.type.toUpperCase()} Strike: $${point.strike}`;
+                    },
+                    label: function(context) {
+                        const point = context.raw;
+                        return [
+                            `Price: $${point.price}`,
+                            `Risk Score: ${point.x.toFixed(1)}`,
+                            `Profit Potential: $${point.y.toFixed(2)}`
+                        ];
+                    }
+                }
+            },
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        };
+    } else if (chartType === 'bar') {
+        chartOptions.scales = {
+            x: {
+                grid: { display: false },
+                title: {
+                    display: true,
+                    text: chartData.labels && chartData.labels[0].includes('(') ? 'Profit Potential Range ($)' : 'Strike Prices'
+                }
+            },
+            y: {
+                grid: { display: true, color: 'rgba(0,0,0,0.1)' },
+                title: {
+                    display: true,
+                    text: chartData.labels && chartData.labels[0].includes('(') ? 'Number of Options' : 'Open Interest'
+                },
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return chartData.labels && chartData.labels[0].includes('(') ? value : Math.abs(value);
+                    }
+                }
+            }
+        };
+        chartOptions.plugins = {
+            legend: { 
+                display: chartData.labels && !chartData.labels[0].includes('('),
+                position: 'top'
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    title: function(context) {
+                        return chartData.labels && chartData.labels[0].includes('(') ? 
+                            `Profit Range: ${context[0].label}` : 
+                            `Strike: ${context[0].label}`;
+                    },
+                    label: function(context) {
+                        const value = Math.abs(context.parsed.y);
+                        return chartData.labels && chartData.labels[0].includes('(') ?
+                            `${context.dataset.label}: ${value}` :
+                            `${context.dataset.label}: ${value.toLocaleString()}`;
+                    }
+                }
+            }
+        };
+    }
+
+    // Create new chart in modal
+    const modalCtx = document.getElementById('modal-chart').getContext('2d');
+    window.modalChart = new Chart(modalCtx, {
+        type: chartType,
+        data: chartData,
+        options: chartOptions
+    });
+}
+
+function closeChartModal() {
+    const modal = document.getElementById('chart-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    if (window.modalChart) {
+        window.modalChart.destroy();
+        window.modalChart = null;
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('chart-modal');
+    if (modal && event.target === modal) {
+        closeChartModal();
+    }
+});
+</script>
+{% endblock %}

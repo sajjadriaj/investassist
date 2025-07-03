@@ -1,0 +1,560 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900">InvestAssist AI</h1>
+                    <p class="text-sm text-gray-500">Your Financial Analysis Companion</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">
+                    <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5 animate-pulse"></div>
+                    Online
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <div id="chat-container" class="flex-1 overflow-hidden flex flex-col">
+        <div id="chat-messages" class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <!-- Welcome Message -->
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-gray-100">
+                        <p class="text-gray-800">Hello! I'm your AI financial advisor. I can help you with:</p>
+                        <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                            <li>• Market analysis for {{ selected_ticker }} and other stocks</li>
+                            <li>• Investment strategies and portfolio insights</li>
+                            <li>• Technical and fundamental analysis questions</li>
+                            <li>• Financial news interpretation</li>
+                        </ul>
+                        <p class="mt-2 text-sm text-gray-500">How can I assist you today?</p>
+                    </div>
+                    <div class="mt-1 text-xs text-gray-400 ml-2">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator (hidden by default) -->
+        <div id="typing-indicator" class="px-6 py-2 hidden">
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-sm"></i>
+                </div>
+                <div class="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-gray-100">
+                    <div class="flex items-center space-x-1">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-white border-t border-gray-200 px-6 py-4">
+            <div class="flex items-end space-x-3">
+                <div class="flex-1 relative">
+                    <textarea
+                        id="chat-input"
+                        placeholder="Ask me anything about investments, market analysis, or financial planning..."
+                        class="w-full resize-none rounded-2xl border border-gray-300 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[50px] max-h-32"
+                        rows="1"
+                    ></textarea>
+                    <button
+                        id="send-button"
+                        class="absolute bottom-2 right-2 w-8 h-8 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fas fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500 text-center">
+                Powered by Gemini AI • Current context: {{ selected_ticker }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendButton = document.getElementById('send-button');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    // Auto-resize textarea
+    function autoResize() {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 128) + 'px';
+    }
+
+    // Enable/disable send button based on input
+    function toggleSendButton() {
+        const hasText = chatInput.value.trim().length > 0;
+        sendButton.disabled = !hasText;
+        sendButton.classList.toggle('opacity-50', !hasText);
+        sendButton.classList.toggle('cursor-not-allowed', !hasText);
+    }
+
+    // Add message to chat
+    function addMessage(message, isUser = false, isPartial = false, timestamp = new Date()) {
+        let messageDiv;
+        let messageContentDiv;
+
+        if (isPartial) {
+            const lastMessageDiv = chatMessages.lastElementChild;
+            if (lastMessageDiv && !lastMessageDiv.classList.contains('status-message') && !lastMessageDiv.querySelector('.fa-user')) {
+                messageDiv = lastMessageDiv;
+                messageContentDiv = messageDiv.querySelector('.markdown-content');
+            } else {
+                messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start space-x-3';
+
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center';
+                avatarDiv.innerHTML = '<i class="fas fa-robot text-white text-sm"></i>';
+                messageDiv.appendChild(avatarDiv);
+
+                const contentWrapperDiv = document.createElement('div');
+                contentWrapperDiv.className = 'flex-1';
+
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'bg-white border border-gray-100 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm inline-block max-w-4xl';
+
+                messageContentDiv = document.createElement('div');
+                messageContentDiv.className = 'text-sm text-gray-800 markdown-content';
+                bubbleDiv.appendChild(messageContentDiv);
+
+                contentWrapperDiv.appendChild(bubbleDiv);
+
+                const timestampDiv = document.createElement('div');
+                timestampDiv.className = 'mt-1 text-xs text-gray-400 ml-2';
+                contentWrapperDiv.appendChild(timestampDiv);
+
+                messageDiv.appendChild(contentWrapperDiv);
+                chatMessages.appendChild(messageDiv);
+            }
+        } else {
+            messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3';
+            
+            if (isUser) {
+                messageDiv.classList.add('flex-row-reverse', 'space-x-reverse');
+            }
+
+            const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = `flex-shrink-0 w-8 h-8 ${isUser ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-blue-500 to-blue-600'} rounded-full flex items-center justify-center`;
+            avatarDiv.innerHTML = `<i class="fas ${isUser ? 'fa-user' : 'fa-robot'} text-white text-sm"></i>`;
+            messageDiv.appendChild(avatarDiv);
+
+            const contentWrapperDiv = document.createElement('div');
+            contentWrapperDiv.className = `flex-1 ${isUser ? 'text-right' : ''}`;
+
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = `bg-${isUser ? 'gradient-to-r from-green-500 to-green-600 text-white' : 'white border border-gray-100'} rounded-2xl ${isUser ? 'rounded-tr-md' : 'rounded-tl-md'} px-4 py-3 shadow-sm inline-block max-w-4xl`;
+
+            messageContentDiv = document.createElement('div');
+            messageContentDiv.className = `text-sm ${isUser ? 'text-green-50' : 'text-gray-800'} ${isUser ? 'whitespace-pre-wrap' : 'markdown-content'}`;
+            bubbleDiv.appendChild(messageContentDiv);
+
+            contentWrapperDiv.appendChild(bubbleDiv);
+
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = `mt-1 text-xs text-gray-400 ${isUser ? 'mr-2' : 'ml-2'}`;
+            timestampDiv.textContent = timeStr;
+            contentWrapperDiv.appendChild(timestampDiv);
+
+            messageDiv.appendChild(contentWrapperDiv);
+            chatMessages.appendChild(messageDiv);
+        }
+
+        if (isUser) {
+            messageContentDiv.innerHTML = message.replace(/\n/g, '<br>');
+        } else {
+            try {
+                messageContentDiv.innerHTML = marked.parse(message);
+            } catch (error) {
+                console.error('Markdown parsing error:', error);
+                messageContentDiv.innerHTML = message.replace(/\n/g, '<br>');
+            }
+        }
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageDiv;
+    }
+
+    // Show typing indicator
+    function showTyping() {
+        typingIndicator.classList.remove('hidden');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Hide typing indicator
+    function hideTyping() {
+        typingIndicator.classList.add('hidden');
+    }
+
+    // Global conversation history
+    let conversationHistory = [];
+
+    // Send message with streaming support
+    async function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Add user message to conversation history
+        const userMessage = { message: message, isUser: true, timestamp: new Date() };
+        conversationHistory.push(userMessage);
+        
+        // Add user message to UI
+        addMessage(message, true);
+        
+        // Clear input and disable send button
+        chatInput.value = '';
+        autoResize();
+        toggleSendButton();
+
+        // Show typing indicator with dynamic status
+        let statusMessageDiv = null;
+        
+        try {
+            // Use streaming endpoint
+            const response = await fetch('/api/chat/stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    query: message,
+                    conversation_history: conversationHistory.slice(-10) // Last 10 messages for context
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            // Create a status message element
+            statusMessageDiv = createStatusMessage();
+            
+            // Handle streaming response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiResponseContent = '';
+            let aiResponseDiv = null;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const jsonString = line.slice(6);
+                            console.log('Parsing JSON:', jsonString);
+                            const data = JSON.parse(jsonString);
+                            
+                            if (data.type === 'status') {
+                                // Update status message
+                                updateStatusMessage(statusMessageDiv, data.message);
+                            } else if (data.type === 'delta') {
+                                // Accumulate and display delta messages
+                                if (!aiResponseDiv) {
+                                    aiResponseDiv = addMessage('', false, true); // Add a placeholder for AI response
+                                } else {
+                                    // Remove the old message div to prevent duplicates
+                                    aiResponseDiv.remove();
+                                }
+                                aiResponseContent += data.message;
+                                aiResponseDiv = addMessage(aiResponseContent, false, true); // Update the message
+                            } else if (data.type === 'response') {
+                                // Final response, add to history and clean up
+                                if (statusMessageDiv) {
+                                    statusMessageDiv.remove();
+                                    statusMessageDiv = null;
+                                }
+                                if (aiResponseContent) {
+                                    const aiMessage = { message: aiResponseContent, isUser: false, timestamp: new Date() };
+                                    conversationHistory.push(aiMessage);
+                                    aiResponseContent = ''; // Reset for next message
+                                    aiResponseDiv = null;
+                                }
+                            } else if (data.type === 'error') {
+                                // Remove status message and show error
+                                if (statusMessageDiv) {
+                                    statusMessageDiv.remove();
+                                    statusMessageDiv = null;
+                                }
+                                addMessage(data.message || 'I apologize, but I encountered an error processing your request.');
+                            } else if (data.type === 'complete') {
+                                // Remove status message if still showing
+                                if (statusMessageDiv) {
+                                    statusMessageDiv.remove();
+                                    statusMessageDiv = null;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error parsing streaming data:', e);
+                            console.error('Problematic JSON string:', line.slice(6));
+                            console.error('Full line:', line);
+                        }
+                    }
+                }
+            }
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            
+            // Remove status message if error occurs
+            if (statusMessageDiv) {
+                statusMessageDiv.remove();
+            }
+            
+            // Fallback to regular API if streaming fails
+            try {
+                const fallbackResponse = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        query: message,
+                        conversation_history: conversationHistory.slice(-10)
+                    }),
+                });
+
+                const data = await fallbackResponse.json();
+                
+                // Add AI response to conversation history
+                const aiMessage = { message: data.response, isUser: false, timestamp: new Date() };
+                conversationHistory.push(aiMessage);
+                
+                addMessage(data.response || 'I apologize, but I encountered an error processing your request.');
+                
+            } catch (fallbackError) {
+                console.error('Fallback error:', fallbackError);
+                addMessage('I apologize, but I\'m currently experiencing technical difficulties. Please try again in a moment.');
+            }
+        }
+    }
+
+    // Create status message element
+    function createStatusMessage() {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex items-start space-x-3 status-message';
+        
+        messageDiv.innerHTML = `
+            <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                <i class="fas fa-robot text-white text-sm"></i>
+            </div>
+            <div class="flex-1">
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm inline-block max-w-4xl">
+                    <div class="text-sm text-blue-800 flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                        <span class="status-text">Processing your request...</span>
+                    </div>
+                </div>
+                <div class="mt-1 text-xs text-gray-400 ml-2">Now</div>
+            </div>
+        `;
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageDiv;
+    }
+
+    // Update status message
+    function updateStatusMessage(messageDiv, text) {
+        if (messageDiv) {
+            const statusText = messageDiv.querySelector('.status-text');
+            if (statusText) {
+                statusText.textContent = text;
+            }
+        }
+    }
+
+    // Event listeners
+    chatInput.addEventListener('input', function() {
+        autoResize();
+        toggleSendButton();
+    });
+
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendButton.disabled) {
+                sendMessage();
+            }
+        }
+    });
+
+    sendButton.addEventListener('click', sendMessage);
+
+    // Initialize
+    autoResize();
+    toggleSendButton();
+    chatInput.focus();
+});
+</script>
+
+<style>
+/* Custom scrollbar for chat messages */
+#chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+#chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Markdown content styling */
+.markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+}
+
+.markdown-content h1 { font-size: 1.25rem; }
+.markdown-content h2 { font-size: 1.125rem; }
+.markdown-content h3 { font-size: 1rem; }
+
+.markdown-content p {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.25rem;
+}
+
+.markdown-content li {
+    margin-bottom: 0.25rem;
+    line-height: 1.5;
+}
+
+.markdown-content strong {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.markdown-content em {
+    font-style: italic;
+}
+
+.markdown-content code {
+    background-color: #f3f4f6;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.markdown-content pre {
+    background-color: #f3f4f6;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.markdown-content blockquote {
+    border-left: 4px solid #d1d5db;
+    padding-left: 1rem;
+    margin: 0.75rem 0;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content th, .markdown-content td {
+    border: 1px solid #d1d5db;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.markdown-content th {
+    background-color: #f9fafb;
+    font-weight: 600;
+}
+
+.markdown-content hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 1rem 0;
+}
+
+/* Smooth animations */
+.animate-bounce {
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* Message fade-in animation */
+#chat-messages > div {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
