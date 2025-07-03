@@ -2,6 +2,10 @@
 
 InvestAssist is an intelligent financial analysis platform designed to provide comprehensive market insights and investment recommendations. Built with an **agentic architecture** using CrewAI, it leverages the collaborative power of specialized AI agents to deliver real-time, actionable intelligence.
 
+## Demo
+
+Watch demo here: <iframe width="560" height="315" src="https://www.youtube.com/watch?v=JgwyX9bwoAY" frameborder="0" allowfullscreen></iframe>
+
 ## Agentic Workflow
 
 InvestAssist is a **multi-agent system** orchestrated by the `FinancialCrew`. This setup ensures that your financial queries are handled with precision and expertise.
