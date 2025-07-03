@@ -31,7 +31,7 @@ InvestAssist features four dedicated AI agents:
 ## ✨ Key Features
 
 *   **Multi-Modal Analysis:** Comprehensive insights covering technicals, options, news, and risk.
-*   **Intelligent Agent Collaboration:** Seamless routing and context-aware responses for complex queries.
+*   **Intelligent Agent Collaboration:** Seamless routing and context-aware responses for complex queries.s
 
 ## Get Started
 
@@ -40,12 +40,12 @@ InvestAssist features four dedicated AI agents:
 Make sure you have Python installed. Then, install the necessary packages:
 
 ```bash
-pip install flask crewai google-generativeai yfinance pandas numpy
+pip install -r requirements.txt
 ```
 
 ### Environment Configuration
 
-Set your API keys. It's recommended to use a `.env` file or environment variables. For example, create a `keys.txt` (or similar) file:
+Set your API keys. It's recommended to use a `.env` file or environment variables.s
 
 ```
 export GEMINI_API_KEY="your_gemini_api_key"
